@@ -15,9 +15,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Network Package Example',
       home: NetworkDemo(
+        // Passing a rest client for handling network requests
         restClient: RestClient(
-          baseUrl: baseUrl,
-          tokenCallBack: () => Future.value(null),
+          baseUrl: baseUrl, // Represents the base URL for the API requests
+          tokenCallBack: () => Future.value(
+              null), // This is a callback function that is responsible for providing the authentication token required for the API requests. It returns a Future<String?> which is used for the authorization process.
+          // onUnAuthorizedError:
+          //     () {}, // This is an optional parameter that represents a callback function to handle unauthorized errors. For example, this function can be used to facilitate immediate logout in scenarios where a user is logged in across multiple devices.
         ),
       ),
     );
@@ -109,15 +113,17 @@ class _NetworkDemoState extends State<NetworkDemo> {
 
   Future<void> fetchPosts() async {
     final response = await widget.restClient.get(
-      APIType.public,
-      baseUrl,
+      APIType
+          .public, // Passing the API type, protected can be used for private API
+      baseUrl, // Passing the endpoint url
       query: {
         '_page': 1,
         '_limit': 10,
-      },
+      }, // Takes the query parameters required for the API calling
     );
     if (response.statusCode == 200) {
       List<dynamic> body = response.data;
+
       setState(() {
         posts = body.map((dynamic item) => Post.fromJson(item)).toList();
       });
@@ -132,16 +138,17 @@ class _NetworkDemoState extends State<NetworkDemo> {
       baseUrl,
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
-      },
+      }, // Setting the headers for the request
       {
         'title': title,
         'body': body,
         'userId': 1,
         'id': posts.length + 1,
-      },
+      }, // Passing request body as Map<String, dynamic>
     );
     if (response.statusCode == 201) {
       final newPost = Post.fromJson(response.data);
+
       setState(() {
         posts.insert(0, newPost);
       });
@@ -166,6 +173,7 @@ class _NetworkDemoState extends State<NetworkDemo> {
     );
     if (response.statusCode == 200) {
       final updatedPost = Post.fromJson(response.data);
+
       setState(() {
         final index = posts.indexWhere((post) => post.id == id);
         if (index != -1) {
@@ -174,6 +182,28 @@ class _NetworkDemoState extends State<NetworkDemo> {
       });
     } else {
       throw Exception('Failed to update post');
+    }
+  }
+
+  Future<void> patchPost(int id, String body) async {
+    final response = await widget.restClient.patch(
+      APIType.public,
+      '$baseUrl/$id',
+      {
+        'body': body,
+      },
+    );
+    if (response.statusCode == 200) {
+      final updatedPost = Post.fromJson(response.data);
+
+      setState(() {
+        final index = posts.indexWhere((post) => post.id == id);
+        if (index != -1) {
+          posts[index] = updatedPost;
+        }
+      });
+    } else {
+      throw Exception('Failed to patch post');
     }
   }
 
