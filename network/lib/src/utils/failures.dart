@@ -1,6 +1,4 @@
-import 'package:equatable/equatable.dart';
-
-abstract class Failure extends Equatable {
+abstract class Failure {
   const Failure(
     this.name,
     this.code,
@@ -10,9 +8,6 @@ abstract class Failure extends Equatable {
   final String? name;
   final String? code;
   final dynamic error;
-
-  @override
-  List<Object?> get props => [name, code, error];
 
   @override
   String toString() {
