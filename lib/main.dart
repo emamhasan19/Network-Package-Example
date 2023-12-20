@@ -18,9 +18,7 @@ class MyApp extends StatelessWidget {
   /// It provides a convenient way to perform HTTP requests by encapsulating
   /// common networking functionalities and allowing customization of the
   /// base URL.
-  final FlutterNetwork flutterNetwork = FlutterNetwork(
-    baseUrl: baseUrl,
-  );
+  final FlutterNetwork flutterNetwork = FlutterNetwork(baseUrl: baseUrl);
 
   @override
   Widget build(BuildContext context) {

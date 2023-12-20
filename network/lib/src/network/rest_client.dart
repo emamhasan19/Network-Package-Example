@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:network/network.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 part 'api_options.dart';
 
@@ -12,6 +13,7 @@ class FlutterNetwork {
   factory FlutterNetwork({
     required String baseUrl,
     Future<String?> Function()? tokenCallback,
+    TokenType tokenType = TokenType.bearer,
     VoidCallback? onUnAuthorizedError,
     CacheOptions? cacheOptions,
     RetryInterceptor? retryInterceptor,
@@ -20,6 +22,7 @@ class FlutterNetwork {
   }) {
     _instance.baseUrl = baseUrl;
     _instance.tokenCallback = tokenCallback;
+    _instance.tokenType = tokenType;
     _instance.onUnAuthorizedError = onUnAuthorizedError ?? () {};
     _instance.connectionTimeout = connectionTimeout;
     _instance.receiveTimeout = receiveTimeout;
@@ -40,7 +43,8 @@ class FlutterNetwork {
   late int connectionTimeout;
   late int receiveTimeout;
   late String baseUrl;
-  late Future<String?> Function()? tokenCallback;
+  Future<String?> Function()? tokenCallback;
+  late TokenType tokenType;
   late VoidCallback onUnAuthorizedError;
   late CacheOptions? cacheOptions;
   late RetryInterceptor? retryInterceptor;
@@ -50,9 +54,9 @@ class FlutterNetwork {
     APIType apiType = APIType.public,
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
-    bool isCacheEnabled = false,
+    bool shouldCache = false,
   }) async {
-    _setDioInterceptorList(isCacheEnabled: isCacheEnabled);
+    _setDioInterceptorList(shouldCache: shouldCache);
 
     final standardHeaders = await _getOptions(apiType);
 
@@ -241,7 +245,7 @@ class FlutterNetwork {
     }
   }
 
-  void _setDioInterceptorList({bool isCacheEnabled = false}) async {
+  void _setDioInterceptorList({bool shouldCache = false}) async {
     List<Interceptor> interceptorList = [];
     _dio.interceptors.clear();
 
@@ -249,10 +253,12 @@ class FlutterNetwork {
       interceptorList.add(PrettyDioLogger());
     }
 
-    if (isCacheEnabled && cacheOptions == null) {
-      throw Exception('Cache options is null. Please provide cache options');
-    } else {
-      interceptorList.add(DioCacheInterceptor(options: cacheOptions!));
+    if (shouldCache) {
+      if (cacheOptions == null) {
+        throw Exception('Cache options is null. Please provide cache options');
+      } else {
+        interceptorList.add(DioCacheInterceptor(options: cacheOptions!));
+      }
     }
 
     if (retryInterceptor != null) {
@@ -275,7 +281,13 @@ class FlutterNetwork {
 
         String? token = await tokenCallback!();
 
-        return ProtectedApiOptions(token!).options;
+        if (tokenType == TokenType.basic) {
+          token = 'Basic $token';
+        } else {
+          token = 'Bearer $token';
+        }
+
+        return ProtectedApiOptions(token).options;
 
       default:
         return PublicApiOptions().options;
